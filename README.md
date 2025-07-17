@@ -59,8 +59,8 @@ Executable will be in `dist/ScrcpyManager.exe`.
 
 ## Screenshots
 
-![Main UI](assets/main.PNG)
-![Settings UI](assets/settings.PNG)
+![Main UI](assets/main.png)
+![Settings UI](assets/settings.png)
 ![Program Icon](assets/icon.png)
 
 ---
