@@ -66,7 +66,7 @@ Executable will be in `dist/ScrcpyManager.exe`.
 ![Main English](assets/main_en.PNG)
 
 #### Main Interface (Dark)
-![Main Dark English](assets/main_dark_en.PNG)
+![Main Dark English](assets/main_en_d.PNG)
 
 #### Settings
 ![Settings English](assets/settings_en.PNG)
@@ -149,7 +149,7 @@ python build.py
 ![Main Arabic](assets/main.PNG)
 
 #### الواجهة الرئيسية (داكن)
-![Main Dark Arabic](assets/main_dark.PNG)
+*نفس صورة الواجهة الرئيسية (فاتح)*
 
 #### الإعدادات
 ![Settings Arabic](assets/settings.PNG)
