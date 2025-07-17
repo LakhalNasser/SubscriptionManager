@@ -71,8 +71,14 @@ Executable will be in `dist/ScrcpyManager.exe`.
 #### Settings
 ![Settings English](assets/settings_en.PNG)
 
+#### Settings
+![Settings Dark English](assets/settings_en_d.PNG)
+
 #### Error Log
 ![Logs English](assets/logs_en.PNG)
+
+#### Error Log
+![Logs Dark English](assets/logs_en_d.PNG)
 
 ---
 
