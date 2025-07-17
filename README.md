@@ -59,7 +59,8 @@ Executable will be in `dist/ScrcpyManager.exe`.
 
 ## Screenshots
 
-![Main UI](assets/app_icon.ico)
+![Main UI](assets/main.PNG)
+![Settings UI](assets/settings.PNG)
 ![Program Icon](assets/icon.png)
 
 ---
@@ -130,7 +131,8 @@ python build.py
 
 ## صور البرنامج
 
-![واجهة البرنامج](assets/app_icon.ico)
+![واجهة البرنامج](assets/main.PNG)
+![واجهةاعدادات البرنامج](assets/settings.PNG)
 ![أيقونة البرنامج](assets/icon.png)
 
 ---
