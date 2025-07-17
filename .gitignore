@@ -1,0 +1,25 @@
+# استثناء الملفات غير المهمة من الرفع إلى GitHub
+__pycache__/
+build/
+dist/
+*.pyc
+*.pyo
+*.exe
+*.dll
+*.zip
+*.bat
+*.vbs
+*.toc
+*.html
+*.spec
+scrcpy/*.dll
+scrcpy/*.exe
+scrcpy/*.bat
+scrcpy/*.vbs
+scrcpy/*.zip
+scrcpy/*.html
+scrcpy/*.toc
+scrcpy/*.pkg
+scrcpy/*.pyz
+scrcpy/*.txt
+scrcpy/localpycs/
