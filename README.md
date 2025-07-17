@@ -59,9 +59,29 @@ Executable will be in `dist/ScrcpyManager.exe`.
 
 ## Screenshots
 
-![واجهة البرنامج](assets/main.PNG)
-![واجهةاعدادات البرنامج](assets/settings.PNG)
-![أيقونة البرنامج](assets/icon.png)
+### العربية
+
+#### الواجهة الرئيسية
+![Main Arabic](assets/main.PNG)
+
+#### الإعدادات
+![Settings Arabic](assets/settings.PNG)
+
+#### سجل الأخطاء
+![Logs Arabic](assets/logs.PNG)
+
+---
+
+### English
+
+#### Main Interface
+![Main English](assets/main_en.PNG)
+
+#### Settings
+![Settings English](assets/settings_en.PNG)
+
+#### Error Log
+![Logs English](assets/logs_en.PNG)
 
 ---
 
@@ -131,9 +151,29 @@ python build.py
 
 ## صور البرنامج
 
-![واجهة البرنامج](assets/main.PNG)
-![واجهةاعدادات البرنامج](assets/settings.PNG)
-![أيقونة البرنامج](assets/icon.png)
+### العربية
+
+#### الواجهة الرئيسية
+![Main Arabic](assets/main.PNG)
+
+#### الإعدادات
+![Settings Arabic](assets/settings.PNG)
+
+#### سجل الأخطاء
+![Logs Arabic](assets/logs.PNG)
+
+---
+
+### English
+
+#### Main Interface
+![Main English](assets/main_en.PNG)
+
+#### Settings
+![Settings English](assets/settings_en.PNG)
+
+#### Error Log
+![Logs English](assets/logs_en.PNG)
 
 ---
 
