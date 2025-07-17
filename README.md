@@ -1,5 +1,77 @@
 # Scrcpy Manager
 
+Scrcpy Manager is an advanced GUI for managing and displaying Android devices on your PC using scrcpy and adb, with full support for wireless connection and customizable display, audio, and input settings.
+
+---
+
+## Features
+- List and manage Android devices via USB or WiFi.
+- Full control over display settings (size, FPS, bitrate, rotation, fullscreen, borderless, etc).
+- Audio settings (enable audio, bitrate).
+- Input settings (mouse and keyboard type).
+- Control settings (stay awake, turn screen off, power off on close).
+- Error log and notifications.
+- Switch connection between USB and WiFi.
+- Professional Arabic UI.
+
+---
+
+## Requirements
+- Python 3.10+
+- Libraries: PyQt5, Pillow, PyInstaller
+- scrcpy and adb files (in scrcpy folder)
+
+Install requirements:
+```powershell
+pip install pyqt5 pillow pyinstaller
+```
+
+---
+
+## How to Run
+1. Ensure scrcpy and adb files are in the `scrcpy` folder.
+2. Run:
+```powershell
+python main.py
+```
+
+---
+
+## How to Build Executable
+Run build.py:
+```powershell
+python build.py
+```
+Executable will be in `dist/ScrcpyManager.exe`.
+
+---
+
+## Project Structure
+- main.py: Main UI and app logic.
+- config.py: Configuration and paths.
+- threads.py: Background process management.
+- ui_components.py: UI components.
+- build.py: Build script.
+- assets/: Icons and images.
+- scrcpy/: Required scrcpy and adb files.
+
+---
+
+## Screenshots
+You can add screenshots of the program by placing image files (e.g. PNG or JPG) in the `assets/` folder, then referencing them here:
+
+![Main UI](assets/app_icon.ico)
+![Program Icon](assets/icon.png)
+
+---
+
+## License
+All source files are free to modify and use for personal purposes.
+
+---
+
+# مدير Scrcpy
+
 برنامج Scrcpy Manager هو واجهة رسومية متقدمة لإدارة وعرض أجهزة الأندرويد على الكمبيوتر باستخدام scrcpy و adb، مع دعم كامل للاتصال اللاسلكي والتحكم في إعدادات العرض والصوت والإدخال.
 
 ---
@@ -57,77 +129,11 @@ python build.py
 
 ---
 
-## طريقة رفع المشروع إلى GitHub
-1. أنشئ مستودع جديد على GitHub باسم مناسب (مثلاً: ScrcpyManager).
-2. من مجلد المشروع، نفذ الأوامر التالية:
-```powershell
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/<اسم_المستخدم>/<اسم_المستودع>.git
-git push -u origin master
-```
+## صور البرنامج
+يمكنك إضافة صور للبرنامج بوضع ملفات الصور (PNG أو JPG) في مجلد `assets/` ثم الإشارة إليها هنا:
 
----
-
-## English Version
-
-### Scrcpy Manager
-Scrcpy Manager is an advanced GUI for managing and displaying Android devices on your PC using scrcpy and adb, with full support for wireless connection and customizable display, audio, and input settings.
-
-#### Features
-- List and manage Android devices via USB or WiFi.
-- Full control over display settings (size, FPS, bitrate, rotation, fullscreen, borderless, etc).
-- Audio settings (enable audio, bitrate).
-- Input settings (mouse and keyboard type).
-- Control settings (stay awake, turn screen off, power off on close).
-- Error log and notifications.
-- Switch connection between USB and WiFi.
-- Professional Arabic UI.
-
-#### Requirements
-- Python 3.10+
-- Libraries: PyQt5, Pillow, PyInstaller
-- scrcpy and adb files (in scrcpy folder)
-
-Install requirements:
-```powershell
-pip install pyqt5 pillow pyinstaller
-```
-
-#### How to Run
-1. Ensure scrcpy and adb files are in the `scrcpy` folder.
-2. Run:
-```powershell
-python main.py
-```
-
-#### How to Build Executable
-Run build.py:
-```powershell
-python build.py
-```
-Executable will be in `dist/ScrcpyManager.exe`.
-
-#### Project Structure
-- main.py: Main UI and app logic.
-- config.py: Configuration and paths.
-- threads.py: Background process management.
-- ui_components.py: UI components.
-- build.py: Build script.
-- assets/: Icons and images.
-- scrcpy/: Required scrcpy and adb files.
-
-#### Upload to GitHub
-1. Create a new repository on GitHub (e.g., ScrcpyManager).
-2. From project folder, run:
-```powershell
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin master
-```
+![واجهة البرنامج](assets/app_icon.ico)
+![أيقونة البرنامج](assets/icon.png)
 
 ---
 
