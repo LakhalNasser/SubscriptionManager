@@ -58,7 +58,6 @@ Executable will be in `dist/ScrcpyManager.exe`.
 ---
 
 ## Screenshots
-You can add screenshots of the program by placing image files (e.g. PNG or JPG) in the `assets/` folder, then referencing them here:
 
 ![Main UI](assets/app_icon.ico)
 ![Program Icon](assets/icon.png)
@@ -130,7 +129,6 @@ python build.py
 ---
 
 ## صور البرنامج
-يمكنك إضافة صور للبرنامج بوضع ملفات الصور (PNG أو JPG) في مجلد `assets/` ثم الإشارة إليها هنا:
 
 ![واجهة البرنامج](assets/app_icon.ico)
 ![أيقونة البرنامج](assets/icon.png)
