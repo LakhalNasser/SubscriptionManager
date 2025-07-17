@@ -13,6 +13,7 @@ Scrcpy Manager is an advanced GUI for managing and displaying Android devices on
 - Error log and notifications.
 - Switch connection between USB and WiFi.
 - Professional Arabic UI.
+- **Theme support (Light/Dark) with instant switching and full language compatibility.**
 
 ---
 
@@ -61,8 +62,11 @@ Executable will be in `dist/ScrcpyManager.exe`.
 
 ### English
 
-#### Main Interface
+#### Main Interface (Light)
 ![Main English](assets/main_en.PNG)
+
+#### Main Interface (Dark)
+![Main Dark English](assets/main_dark_en.PNG)
 
 #### Settings
 ![Settings English](assets/settings_en.PNG)
@@ -92,6 +96,7 @@ All source files are free to modify and use for personal purposes.
 - سجل للأخطاء والتنبيهات.
 - دعم تحويل الاتصال من USB إلى WiFi والعكس.
 - واجهة مستخدم عربية احترافية.
+- **دعم تغيير الثيم (فاتح/داكن) بشكل فوري ومتوافق مع اللغة المختارة.**
 
 ---
 
@@ -140,8 +145,11 @@ python build.py
 
 ### العربية
 
-#### الواجهة الرئيسية
+#### الواجهة الرئيسية (فاتح)
 ![Main Arabic](assets/main.PNG)
+
+#### الواجهة الرئيسية (داكن)
+![Main Dark Arabic](assets/main_dark.PNG)
 
 #### الإعدادات
 ![Settings Arabic](assets/settings.PNG)
