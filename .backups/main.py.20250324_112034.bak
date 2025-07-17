@@ -1,0 +1,221 @@
+import os
+import subprocess
+import time
+import sys
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from config import Config
+from threads import DeviceMonitor, ScrcpyThread
+from ui_components import DisplaySettings, AudioSettings, ControlSettings
+
+class ScrcpyManager(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.settings = QSettings('ScrcpyManager', 'Settings')
+        self.init_ui()
+        self.setup_connections()
+        self.load_settings()
+        
+        self.device_monitor = DeviceMonitor()
+        self.device_monitor.device_found.connect(self.update_device_list)
+        self.device_monitor.start()
+        
+        self.scrcpy_processes = []
+        
+    def init_ui(self):
+        self.setWindowTitle(Config.APP_NAME)
+        self.setGeometry(*Config.DEFAULT_WINDOW_POS, *Config.DEFAULT_WINDOW_SIZE)
+        
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout()
+        
+        # Create tabs
+        tabs = QTabWidget()
+        
+        # Main Control Tab
+        control_tab = QWidget()
+        control_layout = QVBoxLayout()
+        
+        # Device List
+        self.device_list = QListWidget()
+        control_layout.addWidget(QLabel('الأجهزة المتصلة:'))
+        control_layout.addWidget(self.device_list)
+        
+        # Control Buttons
+        buttons_layout = QHBoxLayout()
+        self.start_button = QPushButton('تشغيل')
+        self.stop_button = QPushButton('إيقاف')
+        self.toggle_conn_button = QPushButton('تبديل الاتصال')
+        
+        buttons_layout.addWidget(self.start_button)
+        buttons_layout.addWidget(self.stop_button)
+        buttons_layout.addWidget(self.toggle_conn_button)
+        
+        control_layout.addLayout(buttons_layout)
+        control_tab.setLayout(control_layout)
+        
+        # Settings Tab
+        settings_tab = QWidget()
+        settings_layout = QVBoxLayout()
+        
+        self.display_settings = DisplaySettings()
+        self.audio_settings = AudioSettings()
+        self.control_settings = ControlSettings()
+        
+        settings_layout.addWidget(self.display_settings)
+        settings_layout.addWidget(self.audio_settings)
+        settings_layout.addWidget(self.control_settings)
+        
+        settings_tab.setLayout(settings_layout)
+        
+        # Error Log Tab
+        log_tab = QWidget()
+        log_layout = QVBoxLayout()
+        self.error_log = QTextEdit()
+        self.error_log.setReadOnly(True)
+        log_layout.addWidget(self.error_log)
+        log_tab.setLayout(log_layout)
+        
+        # Add tabs
+        tabs.addTab(control_tab, "التحكم")
+        tabs.addTab(settings_tab, "الإعدادات")
+        tabs.addTab(log_tab, "سجل الأخطاء")
+        
+        layout.addWidget(tabs)
+        central_widget.setLayout(layout)
+        
+    def setup_connections(self):
+        self.start_button.clicked.connect(self.start_scrcpy)
+        self.stop_button.clicked.connect(self.stop_scrcpy)
+        self.toggle_conn_button.clicked.connect(self.toggle_connection)
+        
+    def start_scrcpy(self):
+        selected_items = self.device_list.selectedItems()
+        if not selected_items:
+            self.log_error("لم يتم اختيار جهاز")
+            return
+            
+        device_id = selected_items[0].text()
+        command = self.build_scrcpy_command(device_id)
+        
+        thread = ScrcpyThread(command)
+        thread.error_occurred.connect(self.log_error)
+        thread.start()
+        self.scrcpy_processes.append(thread)
+        
+    def build_scrcpy_command(self, device_id):
+        command = [Config.SCRCPY_COMMAND, '-s', device_id]
+        
+        # Add display settings
+        command.extend(['--max-size', str(self.display_settings.max_size_spin.value())])
+        command.extend(['--video-bit-rate', f'{self.display_settings.bitrate_spin.value()}M'])
+        command.extend(['--max-fps', str(self.display_settings.fps_spin.value())])
+        
+        # Add rotation
+        rotation = int(self.display_settings.rotation_combo.currentText().replace('°', ''))
+        if rotation != 0:
+            command.extend(['--rotation', str(rotation)])
+        
+        # Add display options
+        if self.display_settings.borderless_check.isChecked():
+            command.append('--window-borderless')
+        if self.display_settings.fullscreen_check.isChecked():
+            command.append('--fullscreen')
+        if self.display_settings.always_on_top_check.isChecked():
+            command.append('--always-on-top')
+        if self.display_settings.show_touches_check.isChecked():
+            command.append('--show-touches')
+        
+        # Add audio settings
+        if self.audio_settings.audio_enabled.isChecked():
+            command.extend(['--audio-bit-rate', 
+                          f'{self.audio_settings.audio_bit_rate.value()}k'])
+        
+        # Add control settings
+        if self.control_settings.stay_awake.isChecked():
+            command.append('--stay-awake')
+        if self.control_settings.turn_screen_off.isChecked():
+            command.append('--turn-screen-off')
+        if self.control_settings.power_off_on_close.isChecked():
+            command.append('--power-off-on-close')
+        
+        return command
+        
+    def stop_scrcpy(self):
+        for process in self.scrcpy_processes:
+            process.terminate()
+        self.scrcpy_processes.clear()
+        
+    def toggle_connection(self):
+        selected_items = self.device_list.selectedItems()
+        if not selected_items:
+            self.log_error("لم يتم اختيار جهاز")
+            return
+            
+        device_id = selected_items[0].text()
+        if ':' in device_id:  # Wireless connection
+            self.connect_wired(device_id)
+        else:  # Wired connection
+            self.connect_wireless(device_id)
+            
+    def connect_wireless(self, device_id):
+        try:
+            subprocess.run([Config.ADB_COMMAND, 'tcpip', '5555'])
+            subprocess.run([Config.ADB_COMMAND, 'connect', f"{device_id}:5555"])
+        except Exception as e:
+            self.log_error(str(e))
+            
+    def connect_wired(self, device_id):
+        try:
+            subprocess.run([Config.ADB_COMMAND, 'usb'])
+        except Exception as e:
+            self.log_error(str(e))
+            
+    def update_device_list(self, devices):
+        self.device_list.clear()
+        self.device_list.addItems(devices)
+        
+    def log_error(self, message):
+        self.error_log.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {message}")
+        
+    def load_settings(self):
+        # Window settings
+        pos = self.settings.value('pos', QPoint(*Config.DEFAULT_WINDOW_POS))
+        size = self.settings.value('size', QSize(*Config.DEFAULT_WINDOW_SIZE))
+        self.move(pos)
+        self.resize(size)
+        
+        # Display settings
+        self.display_settings.max_size_spin.setValue(
+            int(self.settings.value('max_size', Config.DEFAULT_MAX_SIZE)))
+        self.display_settings.fps_spin.setValue(
+            int(self.settings.value('fps', Config.DEFAULT_FPS)))
+        self.display_settings.bitrate_spin.setValue(
+            int(self.settings.value('bitrate', Config.DEFAULT_BITRATE)))
+        
+        # Load other settings...
+        
+    def save_settings(self):
+        # Window settings
+        self.settings.setValue('pos', self.pos())
+        self.settings.setValue('size', self.size())
+        
+        # Display settings
+        self.settings.setValue('max_size', self.display_settings.max_size_spin.value())
+        self.settings.setValue('fps', self.display_settings.fps_spin.value())
+        self.settings.setValue('bitrate', self.display_settings.bitrate_spin.value())
+        
+        # Save other settings...
+        
+    def closeEvent(self, event):
+        self.device_monitor.stop()
+        self.stop_scrcpy()
+        self.save_settings()
+        event.accept()
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    manager = ScrcpyManager()
+    manager.show()
+    sys.exit(app.exec_())

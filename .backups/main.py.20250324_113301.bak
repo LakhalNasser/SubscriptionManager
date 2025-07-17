@@ -1,0 +1,302 @@
+# main.py
+
+import os
+import sys
+import time
+import subprocess
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from config import Config
+from threads import ScrcpyThread
+from ui_components import DisplaySettings, AudioSettings, ControlSettings, InputSettings
+
+class ScrcpyManager(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.settings = QSettings('ScrcpyManager', 'Settings')
+        self.init_ui()
+        self.setup_connections()
+        self.load_settings()
+        self.scrcpy_processes = []
+        # نقوم بتحديث قائمة الأجهزة عند بدء البرنامج
+        self.refresh_devices()
+        
+        
+    def init_ui(self):
+        self.setWindowTitle(Config.APP_NAME)
+        self.setGeometry(*Config.DEFAULT_WINDOW_POS, *Config.DEFAULT_WINDOW_SIZE)
+        
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout()
+        
+        # Create tabs
+        tabs = QTabWidget()
+        
+        # Main Control Tab
+        control_tab = QWidget()
+        control_layout = QVBoxLayout()
+        
+        # Device List
+        self.device_list = QListWidget()
+        control_layout.addWidget(QLabel('الأجهزة المتصلة:'))
+        control_layout.addWidget(self.device_list)
+        
+        # Control Buttons
+        buttons_layout = QHBoxLayout()
+        self.start_button = QPushButton('تشغيل')
+        self.stop_button = QPushButton('إيقاف')
+        self.toggle_conn_button = QPushButton('تبديل الاتصال')
+        self.refresh_button = QPushButton('تحديث الأجهزة')
+        self.refresh_button.setToolTip('تحديث قائمة الأجهزة المتصلة')
+
+        buttons_layout.addWidget(self.refresh_button)
+        buttons_layout.addWidget(self.start_button)
+        buttons_layout.addWidget(self.stop_button)
+        buttons_layout.addWidget(self.toggle_conn_button)
+        
+        control_layout.addLayout(buttons_layout)
+        control_tab.setLayout(control_layout)
+        
+        # Settings Tab
+        settings_tab = QWidget()
+        settings_layout = QVBoxLayout()
+        
+        self.display_settings = DisplaySettings()
+        self.audio_settings = AudioSettings()
+        self.control_settings = ControlSettings()
+        self.input_settings = InputSettings()
+
+        settings_layout.addWidget(self.input_settings)        
+        settings_layout.addWidget(self.display_settings)
+        settings_layout.addWidget(self.audio_settings)
+        settings_layout.addWidget(self.control_settings)
+        
+        settings_tab.setLayout(settings_layout)
+        
+        # Error Log Tab
+        log_tab = QWidget()
+        log_layout = QVBoxLayout()
+        self.error_log = QTextEdit()
+        self.error_log.setReadOnly(True)
+        log_layout.addWidget(self.error_log)
+        log_tab.setLayout(log_layout)
+        
+        # Add tabs
+        tabs.addTab(control_tab, "التحكم")
+        tabs.addTab(settings_tab, "الإعدادات")
+        tabs.addTab(log_tab, "سجل الأخطاء")
+        
+        layout.addWidget(tabs)
+        central_widget.setLayout(layout)
+        
+    def setup_connections(self):
+        self.start_button.clicked.connect(self.start_scrcpy)
+        self.stop_button.clicked.connect(self.stop_scrcpy)
+        self.toggle_conn_button.clicked.connect(self.toggle_connection)
+        self.refresh_button.clicked.connect(self.refresh_devices)
+
+
+    def refresh_devices(self):
+        """تحديث قائمة الأجهزة المتصلة"""
+        try:
+            # حفظ الجهاز المحدد حالياً إن وجد
+            current_device = None
+            if self.device_list.selectedItems():
+                current_device = self.device_list.selectedItems()[0].text()
+            
+            # تحديث القائمة
+            devices = subprocess.check_output([Config.ADB_COMMAND, 'devices']).decode().splitlines()[1:]
+            connected_devices = [dev.split('\t')[0] for dev in devices if dev.strip()]
+            
+            self.device_list.clear()
+            self.device_list.addItems(connected_devices)
+            
+            # إعادة تحديد الجهاز السابق إن كان ما زال متصلاً
+            if current_device:
+                items = self.device_list.findItems(current_device, Qt.MatchExactly)
+                if items:
+                    self.device_list.setCurrentItem(items[0])
+                    
+        except Exception as e:
+            self.log_error(f"خطأ في تحديث الأجهزة: {e}")
+    
+    def closeEvent(self, event):
+        self.stop_scrcpy()
+        self.save_settings()
+        event.accept()
+
+    
+    def start_scrcpy(self):
+        selected_items = self.device_list.selectedItems()
+        if not selected_items:
+            self.log_error("لم يتم اختيار جهاز")
+            return
+            
+        device_id = selected_items[0].text()
+        command = self.build_scrcpy_command(device_id)
+        
+        thread = ScrcpyThread(command)
+        thread.error_occurred.connect(self.log_error)
+        thread.start()
+        self.scrcpy_processes.append(thread)
+        
+    def build_scrcpy_command(self, device_id):
+        command = [Config.SCRCPY_COMMAND, '-s', device_id]
+        
+        # Add display settings
+        command.extend(['--max-size', str(self.display_settings.max_size_spin.value())])
+        command.extend(['--video-bit-rate', f'{self.display_settings.bitrate_spin.value()}M'])
+        command.extend(['--max-fps', str(self.display_settings.fps_spin.value())])
+        command.extend(['--hid-keyboard', self.input_settings.keyboard_type.currentText()])
+        command.extend(['--hid-mouse', self.input_settings.mouse_type.currentText()])
+        
+        # Add rotation
+        rotation = int(self.display_settings.rotation_combo.currentText().replace('°', ''))
+        if rotation != 0:
+            command.extend(['--rotation', str(rotation)])
+        
+        # Add display options
+        if self.display_settings.borderless_check.isChecked():
+            command.append('--window-borderless')
+        if self.display_settings.fullscreen_check.isChecked():
+            command.append('--fullscreen')
+        if self.display_settings.always_on_top_check.isChecked():
+            command.append('--always-on-top')
+        if self.display_settings.show_touches_check.isChecked():
+            command.append('--show-touches')
+        
+        # Add audio settings
+        if self.audio_settings.audio_enabled.isChecked():
+            command.extend(['--audio-bit-rate', 
+                          f'{self.audio_settings.audio_bit_rate.value()}k'])
+        
+        # Add control settings
+        if self.control_settings.stay_awake.isChecked():
+            command.append('--stay-awake')
+        if self.control_settings.turn_screen_off.isChecked():
+            command.append('--turn-screen-off')
+        if self.control_settings.power_off_on_close.isChecked():
+            command.append('--power-off-on-close')
+        
+        return command
+        
+    def stop_scrcpy(self):
+        for process in self.scrcpy_processes:
+            process.terminate()
+        self.scrcpy_processes.clear()
+        
+    def toggle_connection(self):
+        selected_items = self.device_list.selectedItems()
+        if not selected_items:
+            self.log_error("لم يتم اختيار جهاز")
+            return
+            
+        device_id = selected_items[0].text()
+        if ':' in device_id:  # Wireless connection
+            self.connect_wired(device_id)
+        else:  # Wired connection
+            self.connect_wireless(device_id)
+            
+    def connect_wireless(self, device_id):
+        try:
+            subprocess.run([Config.ADB_COMMAND, 'tcpip', '5555'])
+            subprocess.run([Config.ADB_COMMAND, 'connect', f"{device_id}:5555"])
+        except Exception as e:
+            self.log_error(str(e))
+            
+    def connect_wired(self, device_id):
+        try:
+            subprocess.run([Config.ADB_COMMAND, 'usb'])
+        except Exception as e:
+            self.log_error(str(e))
+            
+    def update_device_list(self, devices):
+        self.device_list.clear()
+        self.device_list.addItems(devices)
+        
+    def log_error(self, message):
+        self.error_log.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {message}")
+        
+    def load_settings(self):
+        # Window settings
+        pos = self.settings.value('pos', QPoint(*Config.DEFAULT_WINDOW_POS))
+        size = self.settings.value('size', QSize(*Config.DEFAULT_WINDOW_SIZE))
+        self.move(pos)
+        self.resize(size)
+        
+        # Display settings
+        self.display_settings.max_size_spin.setValue(
+            int(self.settings.value('max_size', Config.DEFAULT_MAX_SIZE)))
+        self.display_settings.fps_spin.setValue(
+            int(self.settings.value('fps', Config.DEFAULT_FPS)))
+        self.display_settings.bitrate_spin.setValue(
+            int(self.settings.value('bitrate', Config.DEFAULT_BITRATE)))
+        # تحميل إعدادات الإدخال
+        self.input_settings.keyboard_type.setCurrentText(
+            self.settings.value('keyboard_type', Config.KEYBOARD_TYPES[0]))
+        self.input_settings.mouse_type.setCurrentText(
+            self.settings.value('mouse_type', Config.MOUSE_TYPES[0]))
+            
+        # تحميل إعدادات العرض
+        self.display_settings.borderless_check.setChecked(
+            self.settings.value('borderless', False, type=bool))
+        self.display_settings.fullscreen_check.setChecked(
+            self.settings.value('fullscreen', False, type=bool))
+        self.display_settings.always_on_top_check.setChecked(
+            self.settings.value('always_on_top', False, type=bool))
+        self.display_settings.show_touches_check.setChecked(
+            self.settings.value('show_touches', False, type=bool))
+        self.display_settings.rotation_combo.setCurrentText(
+            self.settings.value('rotation', '0°'))
+            
+        # تحميل إعدادات الصوت
+        self.audio_settings.audio_enabled.setChecked(
+            self.settings.value('audio_enabled', False, type=bool))
+        self.audio_settings.audio_bit_rate.setValue(
+            int(self.settings.value('audio_bit_rate', Config.DEFAULT_AUDIO_BITRATE)))
+            
+        # تحميل إعدادات التحكم
+        self.control_settings.stay_awake.setChecked(
+            self.settings.value('stay_awake', False, type=bool))
+        self.control_settings.turn_screen_off.setChecked(
+            self.settings.value('turn_screen_off', False, type=bool))
+        self.control_settings.power_off_on_close.setChecked(
+            self.settings.value('power_off_on_close', False, type=bool))
+
+    def save_settings(self):
+        # Window settings
+        self.settings.setValue('pos', self.pos())
+        self.settings.setValue('size', self.size())
+        
+        # Display settings
+        self.settings.setValue('max_size', self.display_settings.max_size_spin.value())
+        self.settings.setValue('fps', self.display_settings.fps_spin.value())
+        self.settings.setValue('bitrate', self.display_settings.bitrate_spin.value())
+        
+        # حفظ إعدادات الإدخال
+        self.settings.setValue('keyboard_type', self.input_settings.keyboard_type.currentText())
+        self.settings.setValue('mouse_type', self.input_settings.mouse_type.currentText())
+        
+        # حفظ إعدادات العرض
+        self.settings.setValue('borderless', self.display_settings.borderless_check.isChecked())
+        self.settings.setValue('fullscreen', self.display_settings.fullscreen_check.isChecked())
+        self.settings.setValue('always_on_top', self.display_settings.always_on_top_check.isChecked())
+        self.settings.setValue('show_touches', self.display_settings.show_touches_check.isChecked())
+        self.settings.setValue('rotation', self.display_settings.rotation_combo.currentText())
+        
+        # حفظ إعدادات الصوت
+        self.settings.setValue('audio_enabled', self.audio_settings.audio_enabled.isChecked())
+        self.settings.setValue('audio_bit_rate', self.audio_settings.audio_bit_rate.value())
+        
+        # حفظ إعدادات التحكم
+        self.settings.setValue('stay_awake', self.control_settings.stay_awake.isChecked())
+        self.settings.setValue('turn_screen_off', self.control_settings.turn_screen_off.isChecked())
+        self.settings.setValue('power_off_on_close', self.control_settings.power_off_on_close.isChecked())
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    manager = ScrcpyManager()
+    manager.show()
+    sys.exit(app.exec_())

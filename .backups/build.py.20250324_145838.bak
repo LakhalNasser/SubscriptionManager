@@ -1,0 +1,148 @@
+# build.py
+import os
+import sys
+import shutil
+import PyInstaller.__main__
+from PIL import Image
+import io
+
+def create_ico_from_png(png_path, ico_path):
+    """تحويل صورة PNG إلى ICO مع الحفاظ على الجودة العالية"""
+    try:
+        # فتح صورة PNG
+        img = Image.open(png_path)
+        
+        # قائمة بأحجام الأيقونات المطلوبة
+        sizes = [(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)]
+        
+        # إنشاء نسخ بأحجام مختلفة مع الحفاظ على الجودة
+        img.save(ico_path, format='ICO', sizes=sizes)
+        return True
+    except Exception as e:
+        print(f"خطأ في تحويل الأيقونة: {e}")
+        return False
+
+def main():
+    # تحديد المسارات
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    dist_dir = os.path.join(current_dir, 'dist')
+    build_dir = os.path.join(current_dir, 'build')
+    assets_dir = os.path.join(current_dir, 'assets')
+    scrcpy_dir = os.path.join(current_dir, 'scrcpy')
+    
+    # مسارات الأيقونات
+    png_icon = os.path.join(assets_dir, 'icon.png')
+    ico_icon = os.path.join(assets_dir, 'icon.ico')
+
+    # حذف الملفات القديمة
+    for dir_path in [dist_dir, build_dir]:
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
+
+    # تحويل PNG إلى ICO
+    if os.path.exists(png_icon):
+        create_ico_from_png(png_icon, ico_icon)
+    else:
+        print("خطأ: ملف الأيقونة PNG غير موجود!")
+        return
+
+    # تجميع الملفات المطلوبة
+    data_files = [
+        ('assets/*', 'assets'),
+        ('scrcpy/*', 'scrcpy'),
+    ]
+
+    # خيارات البناء
+    options = [
+        'main.py',
+        '--name=ScrcpyManager',
+        '--onefile',
+        '--windowed',
+        f'--icon={ico_icon}',
+        '--noconfirm',
+        '--clean',
+        '--uac-admin',  # طلب صلاحيات المسؤول
+        '--version-file=version.txt',  # ملف معلومات الإصدار
+    ]
+
+    # إضافة معلومات الإصدار
+    version_info = f"""
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'Your Company'),
+         StringStruct(u'FileDescription', u'Scrcpy Manager'),
+         StringStruct(u'FileVersion', u'1.0.0'),
+         StringStruct(u'InternalName', u'scrcpy_manager'),
+         StringStruct(u'LegalCopyright', u'Copyright (c) 2024'),
+         StringStruct(u'OriginalFilename', u'ScrcpyManager.exe'),
+         StringStruct(u'ProductName', u'Scrcpy Manager'),
+         StringStruct(u'ProductVersion', u'1.0.0')])
+    ]),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
+"""
+
+    # حفظ معلومات الإصدار
+    with open('version.txt', 'w', encoding='utf-8') as f:
+        f.write(version_info)
+
+    # إضافة الملفات المطلوبة
+    for src, dst in data_files:
+        options.extend(['--add-data', f'{src};{dst}'])
+
+    # إضافة خيارات تحسين الأداء
+    options.extend([
+        '--noupx',  # تجنب ضغط الملف التنفيذي
+        '--noconsole',  # منع ظهور نافذة الكونسول
+    ])
+
+    try:
+        # تشغيل عملية البناء
+        PyInstaller.__main__.run(options)
+        
+        # تنظيف الملفات المؤقتة
+        if os.path.exists('version.txt'):
+            os.remove('version.txt')
+        if os.path.exists(ico_icon):
+            os.remove(ico_icon)
+            
+        print("تم بناء التطبيق بنجاح!")
+        print(f"الملف التنفيذي موجود في: {os.path.join(dist_dir, 'ScrcpyManager.exe')}")
+        
+    except Exception as e:
+        print(f"حدث خطأ أثناء البناء: {e}")
+    
+    finally:
+        # تنظيف نهائي
+        for cleanup_file in ['version.txt', ico_icon]:
+            if os.path.exists(cleanup_file):
+                try:
+                    os.remove(cleanup_file)
+                except:
+                    pass
+
+if __name__ == "__main__":
+    # تثبيت المكتبات المطلوبة إذا لم تكن موجودة
+    required_packages = ['pillow', 'pyinstaller']
+    for package in required_packages:
+        try:
+            __import__(package)
+        except ImportError:
+            print(f"تثبيت حزمة {package}...")
+            os.system(f"pip install {package}")
+    
+    main()

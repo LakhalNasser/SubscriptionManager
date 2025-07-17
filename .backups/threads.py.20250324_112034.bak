@@ -1,0 +1,38 @@
+# threads.py
+
+from PyQt5.QtCore import QThread, pyqtSignal
+import subprocess
+import time
+
+class DeviceMonitor(QThread):
+    device_found = pyqtSignal(list)
+    
+    def __init__(self):
+        super().__init__()
+        self.running = True
+        
+    def run(self):
+        while self.running:
+            try:
+                devices = subprocess.check_output(['adb', 'devices']).decode().splitlines()[1:]
+                connected_devices = [dev.split('\t')[0] for dev in devices if dev.strip()]
+                self.device_found.emit(connected_devices)
+            except Exception as e:
+                print(f"Error monitoring devices: {e}")
+            time.sleep(2)
+            
+    def stop(self):
+        self.running = False
+
+class ScrcpyThread(QThread):
+    error_occurred = pyqtSignal(str)
+    
+    def __init__(self, command):
+        super().__init__()
+        self.command = command
+        
+    def run(self):
+        try:
+            subprocess.run(self.command, check=True)
+        except Exception as e:
+            self.error_occurred.emit(str(e))

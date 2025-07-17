@@ -1,0 +1,46 @@
+# build.py
+import os
+import sys
+import shutil
+import PyInstaller.__main__
+
+# تحديد المسار الحالي
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# تحديد مسارات المجلدات
+dist_dir = os.path.join(current_dir, 'dist')
+build_dir = os.path.join(current_dir, 'build')
+assets_dir = os.path.join(current_dir, 'assets')
+scrcpy_dir = os.path.join(current_dir, 'scrcpy')
+icon_path = os.path.join(assets_dir, 'icon.png')
+
+# حذف مجلدات البناء القديمة إن وجدت
+for dir_path in [dist_dir, build_dir]:
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+
+# تجميع كل الملفات المطلوبة
+data_files = [
+    ('assets/*', 'assets'),  # نسخ كل محتويات مجلد assets
+    ('scrcpy/*', 'scrcpy'),  # نسخ كل محتويات مجلد scrcpy
+]
+
+# إنشاء قائمة بخيارات البناء
+options = [
+    'main.py',                    # الملف الرئيسي
+    '--name=ScrcpyManager',       # اسم الملف التنفيذي
+    '--onefile',                  # دمج كل شيء في ملف واحد
+    '--windowed',                 # تطبيق نافذة (بدون نافذة console)
+    f'--icon={icon_path}',        # أيقونة التطبيق
+    '--noconfirm',                # عدم السؤال عن التأكيد
+    '--clean',                    # تنظيف مخلفات البناء السابقة
+]
+
+# إضافة جميع الملفات المطلوبة
+for src, dst in data_files:
+    options.extend(['--add-data', f'{src};{dst}'])
+
+# تشغيل عملية البناء
+PyInstaller.__main__.run(options)
+
+print("تم بناء التطبيق بنجاح!")
